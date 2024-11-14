@@ -7,9 +7,8 @@ import cbrkit
 class TasadorCBR(CBR):
     def __init__(self, base_de_casos, 
                        num_casos_similares, 
-                       taxonomia_colors="datos/paint_color.yaml", 
-                       taxonomia_manufacturer="datos/manufacturer.yaml",
-                       umbral_precio=10,
+                       taxonomia_cwe="jerarquia_cwe_1000.yaml",
+                       umbral_score=0.1, 
                        debug = False):
         super().__init__(base_de_casos, num_casos_similares)
         #CBR.__init__(self, base_de_casos, num_casos_similares)
@@ -17,29 +16,22 @@ class TasadorCBR(CBR):
             self.DEBUG = CBR_DEBUG(self.prettyprint_caso)
         else: 
             self.DEBUG = None
-        self.umbral_precio = umbral_precio
-        self.retriever = self.inicializar_retriever(num_casos_similares, taxonomia_colors, taxonomia_manufacturer)    
+        self.umbral_score = umbral_score
+        self.retriever = self.inicializar_retriever(num_casos_similares, taxonomia_cwe)    
         
-    def inicializar_retriever(self, num_casos_similares, 
-                              taxonomia_colors, 
-                              taxonomia_manufacturer):
-        
-        # ejemplos de similaridades sobre taxonomias (colores y marcas)
-        color_similarity = cbrkit.sim.strings.taxonomy.load(taxonomia_colors, 
-                                                    cbrkit.sim.strings.taxonomy.wu_palmer())
+    def inicializar_retriever(self, num_casos_similares, taxonomia_cwe):
 
-        manufacturer_similarity = cbrkit.sim.strings.taxonomy.load(taxonomia_manufacturer, 
-                                                    cbrkit.sim.strings.taxonomy.wu_palmer())
+        cwe_similarity = cbrkit.sim.strings.taxonomy.load(taxonomia_cwe, cbrkit.sim.strings.taxonomy.wu_palmer())
 
         # ejemplo de similaridad para "objeto anidado" model (marca + modelo)
-        model_similarity = cbrkit.sim.attribute_value(
+        cwe_similarity = cbrkit.sim.attribute_value(
                 attributes={
-                    "manufacturer": manufacturer_similarity,
+                    "cwe": cwe_similarity,
                     "make": cbrkit.sim.strings.levenshtein()
                 },
                 aggregator=cbrkit.sim.aggregator(pooling="mean")
             )
-
+"""
         # similaridad de "millas" (ejemplo de funcion de similaridad propia)
         def miles_similarity(x,y):
             diff = abs(x-y)
@@ -69,10 +61,15 @@ class TasadorCBR(CBR):
                                                                   "fuel":0.6,
                                                                   "transmission": 0.1})
             )
-
+"""
         # funcion de similaridad completa
         case_similarity = cbrkit.sim.attribute_value(
                             attributes={
+                                "description": #engine similaroty / comparación strings
+                                "affected_products": #comparacion strings
+                                "cwe": #jerarquia
+                                "keywords": #comparacion listas
+                                
                                 "type": cbrkit.sim.generic.equality(),
                                 "title_status": cbrkit.sim.generic.equality(),
                                 "model" : model_similarity,
